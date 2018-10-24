@@ -153,7 +153,11 @@ export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
   handleCommand = (command: Command) => {
     if (!command.execute) return;
     const newEditorState = command.execute(this.cachedDraftState);
-    this.handleTextChange(newEditorState);
+    if(newEditorState.constructor.name==="Promise"){
+      (newEditorState as any).then((result) =>  this.handleTextChange(result));
+    }else{
+      this.handleTextChange(newEditorState);
+    }
   };
 
   componentDidUpdate (prevProps: ReactMdeProps) {
