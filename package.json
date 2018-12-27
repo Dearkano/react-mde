@@ -88,6 +88,7 @@
   },
   "dependencies": {
     "classnames": "^2.2.5",
-    "npm": "^6.1.0"
+    "npm": "^6.1.0",
+    "react-remark": "^1.0.5"
   }
 }
