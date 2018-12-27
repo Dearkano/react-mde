@@ -1,13 +1,20 @@
 import * as React from "react";
+import * as ReactRemark from 'react-remark'
 import {
   Command,
   GenerateMarkdownPreview,
-  ButtonContentOptions, CommandGroup
+  ButtonContentOptions,
+  CommandGroup
 } from "./types";
 import { getDefaultCommands } from "./commands";
 import { ContentState, EditorProps, EditorState } from "draft-js";
 import { getPlainText } from "./util/DraftUtil";
-import { MdeEditor, MdePreview, MdeToolbar, MdeFontAwesomeIcon } from "./components";
+import {
+  MdeEditor,
+  MdePreview,
+  MdeToolbar,
+  MdeFontAwesomeIcon
+} from "./components";
 import * as classNames from "classnames";
 import { extractCommandMap } from "./util/CommandUtils";
 import { Tab } from "./types/Tab";
@@ -28,17 +35,17 @@ export interface ReactMdeProps {
   minEditorHeight: number;
   maxEditorHeight: number;
   minPreviewHeight: number;
+  previewClassName?: string
 }
 
 export interface ReactMdeState {
-  currentTab: Tab,
-  previewLoading: boolean,
-  previewHtml?: string,
-  editorHeight: number
+  currentTab: Tab;
+  previewLoading: boolean;
+  previewHtml?: string;
+  editorHeight: number;
 }
 
 export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
-
   cachedDraftState: EditorState;
   cachedValue: string;
 
@@ -56,7 +63,7 @@ export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
   static defaultProps: Partial<ReactMdeProps> = {
     commands: getDefaultCommands(),
     buttonContentOptions: {
-      iconProvider: name => <MdeFontAwesomeIcon icon={name}/>
+      iconProvider: name => <MdeFontAwesomeIcon icon={name} />
     },
     emptyPreviewHtml: "<p>&nbsp;</p>",
     readOnly: false,
@@ -66,7 +73,7 @@ export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
     minPreviewHeight: 200
   };
 
-  constructor (props: ReactMdeProps) {
+  constructor(props: ReactMdeProps) {
     super(props);
     this.rebuildCache(props.value);
     this.state = {
@@ -106,11 +113,19 @@ export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
 
   handleGripMouseMove = (event: MouseEvent) => {
     if (this.gripDrag !== null) {
-      const newHeight = this.gripDrag.originalHeight + event.clientY - this.gripDrag.originalDragY;
-      if (newHeight >= this.props.minEditorHeight && newHeight <= this.props.maxEditorHeight) {
+      const newHeight =
+        this.gripDrag.originalHeight +
+        event.clientY -
+        this.gripDrag.originalDragY;
+      if (
+        newHeight >= this.props.minEditorHeight &&
+        newHeight <= this.props.maxEditorHeight
+      ) {
         this.setState({
           ...this.state,
-          editorHeight: this.gripDrag.originalHeight + (event.clientY - this.gripDrag.originalDragY)
+          editorHeight:
+            this.gripDrag.originalHeight +
+            (event.clientY - this.gripDrag.originalDragY)
         });
       }
     }
@@ -131,7 +146,7 @@ export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
     if (newTab === "preview") {
       // fire preview load
       const { generateMarkdownPreview } = this.props;
-      generateMarkdownPreview(this.cachedValue).then((previewHtml) => {
+      generateMarkdownPreview(this.cachedValue).then(previewHtml => {
         this.setState({
           // the current tab will be preview because changing tabs during preview
           // load should be prevented
@@ -145,22 +160,25 @@ export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
     }
   };
 
-  componentDidMount () {
-    document.addEventListener<"mousemove">("mousemove", this.handleGripMouseMove);
+  componentDidMount() {
+    document.addEventListener<"mousemove">(
+      "mousemove",
+      this.handleGripMouseMove
+    );
     document.addEventListener<"mouseup">("mouseup", this.handleGripMouseUp);
   }
 
   handleCommand = (command: Command) => {
     if (!command.execute) return;
     const newEditorState = command.execute(this.cachedDraftState);
-    if(newEditorState.constructor.name==="Promise"){
-      (newEditorState as any).then((result) =>  this.handleTextChange(result));
-    }else{
+    if (newEditorState.constructor.name === "Promise") {
+      (newEditorState as any).then(result => this.handleTextChange(result));
+    } else {
       this.handleTextChange(newEditorState);
     }
   };
 
-  componentDidUpdate (prevProps: ReactMdeProps) {
+  componentDidUpdate(prevProps: ReactMdeProps) {
     if (prevProps.value !== this.props.value) {
       this.rebuildCache(this.props.value);
     }
@@ -174,8 +192,7 @@ export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
     return "not-handled";
   };
 
-  render () {
-
+  render() {
     const {
       buttonContentOptions,
       commands,
@@ -184,11 +201,19 @@ export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
       readOnly,
       draftEditorProps,
       l18n,
-      minPreviewHeight
+      minPreviewHeight,
+      value,
+      previewClassName
     } = this.props;
 
     return (
-      <div className={classNames("react-mde", "react-mde-tabbed-layout", className)}>
+      <div
+        className={classNames(
+          "react-mde",
+          "react-mde-tabbed-layout",
+          className
+        )}
+      >
         <MdeToolbar
           buttonContentOptions={buttonContentOptions}
           commands={commands}
@@ -198,39 +223,38 @@ export class ReactMde extends React.Component<ReactMdeProps, ReactMdeState> {
           readOnly={readOnly}
           l18n={l18n}
         />
-        {
-          this.state.currentTab === "write" ?
-            <>
-              <MdeEditor
-                editorRef={(c) => this.editorRef = c}
-                onChange={this.handleTextChange}
-                editorState={this.cachedDraftState}
-                readOnly={readOnly}
-                draftEditorProps={draftEditorProps}
-                handleKeyCommand={this.handleKeyCommand}
-                height={this.state.editorHeight}
-              />
-              <div className="grip"
-                   onMouseDown={this.handleGripMouseDown}
-              >
-                <svg aria-hidden="true" data-prefix="far" data-icon="ellipsis-h" role="img"
-                     xmlns="http://www.w3.org/2000/svg"
-                     viewBox="0 0 512 512" className="icon">
-                  <path fill="currentColor"
-                        d="M304 256c0 26.5-21.5 48-48 48s-48-21.5-48-48 21.5-48 48-48 48 21.5 48 48zm120-48c-26.5 0-48 21.5-48 48s21.5 48 48 48 48-21.5 48-48-21.5-48-48-48zm-336 0c-26.5 0-48 21.5-48 48s21.5 48 48 48 48-21.5 48-48-21.5-48-48-48z"
-                        className=""></path>
-                </svg>
-              </div>
-            </>
-            :
-            < MdePreview
-              previewRef={(c) => this.previewRef = c}
-              html={this.state.previewHtml}
-              loading={this.state.previewLoading}
-              emptyPreviewHtml={emptyPreviewHtml}
-              minHeight={minPreviewHeight}
+        {this.state.currentTab === "write" ? (
+          <>
+            <MdeEditor
+              editorRef={c => (this.editorRef = c)}
+              onChange={this.handleTextChange}
+              editorState={this.cachedDraftState}
+              readOnly={readOnly}
+              draftEditorProps={draftEditorProps}
+              handleKeyCommand={this.handleKeyCommand}
+              height={this.state.editorHeight}
             />
-        }
+            <div className="grip" onMouseDown={this.handleGripMouseDown}>
+              <svg
+                aria-hidden="true"
+                data-prefix="far"
+                data-icon="ellipsis-h"
+                role="img"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 512 512"
+                className="icon"
+              >
+                <path
+                  fill="currentColor"
+                  d="M304 256c0 26.5-21.5 48-48 48s-48-21.5-48-48 21.5-48 48-48 48 21.5 48 48zm120-48c-26.5 0-48 21.5-48 48s21.5 48 48 48 48-21.5 48-48-21.5-48-48-48zm-336 0c-26.5 0-48 21.5-48 48s21.5 48 48 48 48-21.5 48-48-21.5-48-48-48z"
+                  className=""
+                />
+              </svg>
+            </div>
+          </>
+        ) : (
+          <ReactRemark className={previewClassName} source={value || emptyPreviewHtml} />
+        )}
       </div>
     );
   }
